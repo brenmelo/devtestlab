@@ -1,0 +1,68 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "labName": {
+      "type": "string",
+      "defaultValue": "MyLab"
+    },
+    "logicAppName": {
+      "type": "string",
+      "defaultValue": "MyLogicApp"
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]"
+    }
+  },
+  "resources": [
+    {
+      "type": "Microsoft.DevTestLab/labs",
+      "apiVersion": "2018-09-15",
+      "name": "[parameters('labName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "labStorageType": "Premium",
+        "premiumDataDisks": "Enabled"
+      }
+    },
+    {
+      "type": "Microsoft.Logic/workflows",
+      "apiVersion": "2019-05-01",
+      "name": "[parameters('logicAppName')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.DevTestLab/labs', parameters('labName'))]"
+      ],
+      "properties": {
+        "definition": {
+          "$schema": "https://schema.management.azure.com/providers/Microsoft.Logic/schemas/2016-06-01/workflowdefinition.json#",
+          "contentVersion": "1.0.0.0",
+          "parameters": {},
+          "triggers": {
+            "Recurrence": {
+              "recurrence": {
+                "frequency": "Hour",
+                "interval": 1
+              },
+              "type": "Recurrence"
+            }
+          },
+          "actions": {
+            "Hello_World": {
+              "inputs": {
+                "method": "GET",
+                "uri": "[concat('https://example.com/hello-world')]"
+              },
+              "runAfter": {},
+              "type": "Http"
+            }
+          },
+          "outputs": {}
+        },
+        "parameters": {},
+        "state": "[if(equals(parameters('logicAppName'), 'MyLogicApp'), 'Enabled', 'Disabled')]"
+      }
+    }
+  ]
+}
